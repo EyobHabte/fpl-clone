@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
+    "africastalking": "^0.7.9",
     "bcryptjs": "^2.4.3",
     "next": "14.2.15",
     "next-auth": "^4.24.7",
