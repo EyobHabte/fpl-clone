@@ -1,17 +1,26 @@
 // @ts-expect-error - the africastalking package doesn't ship its own TypeScript types
-import AfricasTalking from 'africastalking';
+import AfricasTalkingFactory from 'africastalking';
 
-const credentials = {
-  apiKey: process.env.AFRICASTALKING_API_KEY ?? '',
-  // 'sandbox' is the required username for Africa's Talking's free test environment
-  username: process.env.AFRICASTALKING_USERNAME ?? 'sandbox',
-};
+// Lazily constructed - if this ran eagerly at module load time, it would also
+// run during Next.js's build-time "collecting page data" step (which briefly
+// imports every route module), before real environment variables are
+// guaranteed to be available in the same way they are at runtime. Building
+// the client only when actually sending an SMS avoids that entirely.
+let cachedClient: any = null;
 
-const client = AfricasTalking(credentials);
-const smsService = client.SMS;
+function getClient() {
+  if (!cachedClient) {
+    cachedClient = AfricasTalkingFactory({
+      apiKey: process.env.AFRICASTALKING_API_KEY ?? '',
+      username: process.env.AFRICASTALKING_USERNAME ?? 'sandbox',
+    });
+  }
+  return cachedClient;
+}
 
 export async function sendSms(to: string, message: string) {
-  return smsService.send({
+  const client = getClient();
+  return client.SMS.send({
     to: [to],
     message,
     ...(process.env.AFRICASTALKING_SENDER_ID ? { from: process.env.AFRICASTALKING_SENDER_ID } : {}),
