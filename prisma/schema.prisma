@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Users ----------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  teamName      String
+  emailVerified DateTime? // null until the user clicks the link in their verification email
+  phone         String?   @unique // E.164 format, e.g. +2519XXXXXXXX - optional
+  phoneVerified DateTime? // null until the user confirms their SMS code
+  createdAt     DateTime  @default(now())
+
+  squad                   Squad?
+  leagueEntries           LeagueEntry[]
+  verificationTokens      EmailVerificationToken[]
+  phoneVerificationCodes  PhoneVerificationCode[]
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime? // once set, repeat visits to the same link are treated as success, not an error
+  createdAt DateTime  @default(now())
+}
+
+model PhoneVerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String   // the pending number being verified - only copied to User.phone on success
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ---------- Real-world reference data, synced from the official FPL API ----------
+
+model Club {
+  id        Int      @id // FPL team id
+  code      Int      @default(0) // FPL's separate "team code", used to build official shirt image URLs
+  name      String
+  shortName String
+  players   Player[]
+}
+
+model Player {
+  id                Int      @id // FPL element id
+  firstName         String
+  secondName        String
+  webName           String
+  position          Position
+  price             Int      // stored in tenths, e.g. 105 = £10.5m (matches FPL's own convention)
+  clubId            Int
+  club              Club     @relation(fields: [clubId], references: [id])
+  totalPoints       Int      @default(0)
+  form              Float    @default(0)
+  pointsPerGame     Float    @default(0)
+  selectedByPercent Float    @default(0)
+  photoCode         String? // used to build the shirt/photo image URL
+  updatedAt         DateTime @updatedAt
+
+  squadPlayers         SquadPlayer[]
+  gameweekSquadPlayers GameweekSquadPlayer[]
+  gameweekStats        PlayerGameweekStat[]
+}
+
+enum Position {
+  GK
+  DEF
+  MID
+  FWD
+}
+
+model PlayerGameweekStat {
+  id          String @id @default(cuid())
+  playerId    Int
+  player      Player @relation(fields: [playerId], references: [id])
+  gameweekId  String
+  gameweek    Gameweek @relation(fields: [gameweekId], references: [id])
+  points      Int
+  minutes     Int
+  goals       Int
+  assists     Int
+
+  @@unique([playerId, gameweekId])
+}
+
+model Gameweek {
+  id          String    @id @default(cuid())
+  fplEventId  Int       @unique
+  name        String    // "Gameweek 4"
+  deadline    DateTime
+  isActive    Boolean   @default(false)
+  isFinished  Boolean   @default(false)
+  processedAt DateTime? // set once the deadline job has snapshotted squads + opened the league for this gameweek
+  scoredAt    DateTime? // set once scoring is finalized (only after FPL marks the gameweek isFinished)
+
+  gameweekSquads GameweekSquad[]
+  leagues        League[]
+  stats          PlayerGameweekStat[]
+}
+
+// ---------- The user's live, persistent squad ----------
+// This is what the user edits at any time between deadlines.
+
+model Squad {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  budgetTotal     Int      @default(1000) // £100.0m, tenths convention
+  budgetRemaining Int      @default(1000)
+  updatedAt       DateTime @updatedAt
+
+  players SquadPlayer[]
+}
+
+model SquadPlayer {
+  id             String  @id @default(cuid())
+  squadId        String
+  squad          Squad   @relation(fields: [squadId], references: [id])
+  playerId       Int
+  player         Player  @relation(fields: [playerId], references: [id])
+  purchasePrice  Int // price paid at time of transfer in, in tenths
+  isCaptain      Boolean @default(false)
+  isViceCaptain  Boolean @default(false)
+  benchOrder     Int?    // null = starting XI, 0-3 = bench slot
+
+  @@unique([squadId, playerId])
+}
+
+// ---------- Frozen snapshot taken at each gameweek deadline ----------
+// This is what actually scores points and feeds the weekly league table.
+
+model GameweekSquad {
+  id          String   @id @default(cuid())
+  userId      String
+  gameweekId  String
+  gameweek    Gameweek @relation(fields: [gameweekId], references: [id])
+  totalPoints Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  players GameweekSquadPlayer[]
+
+  @@unique([userId, gameweekId])
+}
+
+model GameweekSquadPlayer {
+  id              String        @id @default(cuid())
+  gameweekSquadId String
+  gameweekSquad   GameweekSquad @relation(fields: [gameweekSquadId], references: [id])
+  playerId        Int
+  player          Player        @relation(fields: [playerId], references: [id])
+  isCaptain       Boolean       @default(false)
+  isViceCaptain   Boolean       @default(false)
+  benchOrder      Int?
+  pointsScored    Int           @default(0)
+}
+
+// ---------- Leagues: a fresh weekly leaderboard, auto-created each gameweek ----------
+
+model League {
+  id         String   @id @default(cuid())
+  gameweekId String
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id])
+  name       String   // "Gameweek 4 League"
+  createdAt  DateTime @default(now())
+
+  entries LeagueEntry[]
+
+  @@unique([gameweekId])
+}
+
+model LeagueEntry {
+  id       String @id @default(cuid())
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  points   Int    @default(0)
+  rank     Int?
+
+  @@unique([leagueId, userId])
+}

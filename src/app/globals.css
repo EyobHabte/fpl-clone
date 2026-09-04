@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.pitch-bg {
+  background: repeating-linear-gradient(
+    to bottom,
+    #00a651 0px,
+    #00a651 60px,
+    #04b85a 60px,
+    #04b85a 120px
+  );
+}
