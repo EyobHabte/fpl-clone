@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { validateLineup, LineupPlayer } from '@/lib/formation';
 import { getLockedGameweek } from '@/lib/gameweekDeadline';
+export const dynamic = 'force-dynamic';
 
 // body: { players: LineupPlayer[] }  -- must cover all 15 squad players
 export async function POST(req: Request) {

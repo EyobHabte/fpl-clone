@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendVerificationEmail } from '@/lib/email';
+export const dynamic = 'force-dynamic';
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 

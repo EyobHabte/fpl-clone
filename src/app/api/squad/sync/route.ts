@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getLockedGameweek } from '@/lib/gameweekDeadline';
+export const dynamic = 'force-dynamic';
 
 const SQUAD_SIZE = 15;
 const POSITION_LIMITS: Record<string, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };

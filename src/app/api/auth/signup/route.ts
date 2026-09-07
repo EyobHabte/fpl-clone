@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendVerificationEmail } from '@/lib/email';
+export const dynamic = 'force-dynamic';
 
 const BUDGET_DEFAULT = 1000; // £100.0m, tenths convention
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
