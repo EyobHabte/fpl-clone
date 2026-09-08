@@ -16,19 +16,24 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
 
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, teamName }),
-    });
-    const data = await res.json();
-    setLoading(false);
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, teamName }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? 'Could not create your account');
-      return;
+      if (!res.ok) {
+        setError(data.error ?? 'Could not create your account');
+        return;
+      }
+      setSubmittedEmail(email);
+    } catch (err) {
+      setError('Something went wrong reaching the server. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setSubmittedEmail(email);
   }
 
   if (submittedEmail) {
