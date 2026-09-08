@@ -1,18 +1,20 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let cachedResend: Resend | null = null;
 
-// Resend's shared sandbox address (onboarding@resend.dev) works with zero setup,
-// but until you verify your own domain in the Resend dashboard, it can only
-// deliver to the email address on your own Resend account. Verify a domain
-// and set EMAIL_FROM to send to real users.
-const FROM = process.env.EMAIL_FROM ?? 'Weekly Fantasy <onboarding@resend.dev>';
+function getResend() {
+  if (!cachedResend) {
+    cachedResend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return cachedResend;
+}
 
 export async function sendVerificationEmail(to: string, token: string) {
   const verifyUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
+  const from = process.env.EMAIL_FROM ?? 'Weekly Fantasy <onboarding@resend.dev>';
 
-  await resend.emails.send({
-    from: FROM,
+  await getResend().emails.send({
+    from,
     to,
     subject: 'Confirm your email — Weekly Fantasy',
     html: `
