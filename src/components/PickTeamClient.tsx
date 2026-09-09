@@ -6,6 +6,7 @@ import { PlayerCardData } from '@/components/PlayerCard';
 import PickTeamActionModal, { ActionablePlayer } from '@/components/PickTeamActionModal';
 import SubstitutePickerModal, { SubCandidate } from '@/components/SubstitutePickerModal';
 import { validateLineup, LineupPlayer, Position } from '@/lib/formation';
+import { computeAutoPick } from '@/lib/autoPick';
 
 interface SquadPlayerRow {
   playerId: number;
@@ -177,59 +178,18 @@ export default function PickTeamClient({
     }
     setMessage(null);
 
-    const byPosition: Record<Position, SquadPlayerRow[]> = { GK: [], DEF: [], MID: [], FWD: [] };
-    rows.forEach((r) => byPosition[r.player.position].push(r));
-    (Object.keys(byPosition) as Position[]).forEach((pos) =>
-      byPosition[pos].sort((a, b) => b.player.totalPoints - a.player.totalPoints)
+    const assignments = computeAutoPick(
+      rows.map((r) => ({ playerId: r.playerId, position: r.player.position, totalPoints: r.player.totalPoints }))
     );
-
-    const startingIds = new Set<number>();
-
-    // goalkeeper: always exactly 1
-    startingIds.add(byPosition.GK[0].playerId);
-
-    // lock in the minimum required for each outfield position (best players by points)
-    (['DEF', 'MID', 'FWD'] as const).forEach((pos) => {
-      byPosition[pos].slice(0, POSITION_LIMITS[pos].min).forEach((r) => startingIds.add(r.playerId));
-    });
-
-    // fill the remaining outfield slots (10 total outfield - what's locked in) with the
-    // best remaining players overall, respecting each position's max
-    const outfieldPool = [...byPosition.DEF, ...byPosition.MID, ...byPosition.FWD]
-      .filter((r) => !startingIds.has(r.playerId))
-      .sort((a, b) => b.player.totalPoints - a.player.totalPoints);
-
-    let outfieldStartingCount = startingIds.size - 1; // minus the GK
-    for (const r of outfieldPool) {
-      if (outfieldStartingCount >= 10) break;
-      const pos = r.player.position;
-      const currentCount = rows.filter((row) => startingIds.has(row.playerId) && row.player.position === pos).length;
-      if (currentCount >= POSITION_LIMITS[pos].max) continue;
-      startingIds.add(r.playerId);
-      outfieldStartingCount++;
+    if (!assignments) {
+      setMessage({ text: 'Could not auto pick — your squad shape looks unusual.', type: 'error' });
+      return;
     }
-
-    // bench: reserve GK first (slot 0), then remaining outfield ordered by points desc
-    const reserveGk = byPosition.GK[1];
-    const reserveOutfield = [...byPosition.DEF, ...byPosition.MID, ...byPosition.FWD]
-      .filter((r) => !startingIds.has(r.playerId))
-      .sort((a, b) => b.player.totalPoints - a.player.totalPoints);
-    const benchOrdered = [reserveGk, ...reserveOutfield];
-
-    // captain = best points in starting XI, vice = second best
-    const startingSortedByPoints = rows
-      .filter((r) => startingIds.has(r.playerId))
-      .sort((a, b) => b.player.totalPoints - a.player.totalPoints);
-    const captainId = startingSortedByPoints[0]?.playerId;
-    const viceId = startingSortedByPoints[1]?.playerId;
 
     setRows((prev) =>
       prev.map((r) => {
-        if (startingIds.has(r.playerId)) {
-          return { ...r, benchOrder: null, isCaptain: r.playerId === captainId, isViceCaptain: r.playerId === viceId };
-        }
-        const benchIdx = benchOrdered.findIndex((b) => b.playerId === r.playerId);
-        return { ...r, benchOrder: benchIdx, isCaptain: false, isViceCaptain: false };
+        const a = assignments.find((x) => x.playerId === r.playerId)!;
+        return { ...r, benchOrder: a.benchOrder, isCaptain: a.isCaptain, isViceCaptain: a.isViceCaptain };
       })
     );
   }

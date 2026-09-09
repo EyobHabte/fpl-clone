@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getLockedGameweek } from '@/lib/gameweekDeadline';
+import { computeAutoPick } from '@/lib/autoPick';
+
 export const dynamic = 'force-dynamic';
 
 const SQUAD_SIZE = 15;
@@ -41,8 +43,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'One or more players could not be found' }, { status: 400 });
   }
 
-  // Squad-shape validation
-  (['GK', 'DEF', 'MID', 'FWD'] as const).forEach(() => {});
   for (const pos of Object.keys(POSITION_LIMITS)) {
     const count = targetPlayers.filter((p) => p.position === pos).length;
     if (count > POSITION_LIMITS[pos]) {
@@ -79,6 +79,35 @@ export async function POST(req: Request) {
       data: { budgetRemaining: squad.budgetTotal - totalCost },
     }),
   ]);
+
+  // Auto-pick a starting XI, captain, and vice-captain immediately after
+  // every squad save, so the squad is playable without a separate visit
+  // to Pick Team. This always recomputes fresh - a transfer can easily
+  // invalidate whatever formation was set before.
+  const autoPickInput = targetPlayers.map((p) => ({
+    playerId: p.id,
+    position: p.position as 'GK' | 'DEF' | 'MID' | 'FWD',
+    totalPoints: p.totalPoints,
+  }));
+  const assignments = computeAutoPick(autoPickInput);
+
+  if (assignments) {
+    const updatedSquad = await prisma.squad.findUnique({
+      where: { id: squad.id },
+      include: { players: true },
+    });
+    if (updatedSquad) {
+      await prisma.$transaction(
+        assignments.map((a) => {
+          const squadPlayer = updatedSquad.players.find((sp) => sp.playerId === a.playerId)!;
+          return prisma.squadPlayer.update({
+            where: { id: squadPlayer.id },
+            data: { benchOrder: a.benchOrder, isCaptain: a.isCaptain, isViceCaptain: a.isViceCaptain },
+          });
+        })
+      );
+    }
+  }
 
   return NextResponse.json({ ok: true, budgetRemaining: squad.budgetTotal - totalCost });
 }
