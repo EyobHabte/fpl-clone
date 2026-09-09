@@ -145,6 +145,7 @@ export default function TransfersClient({
 
   function resetSquad() {
     setSquadPlayers(savedSquadPlayers);
+    setPendingReplacement(null);
     setMessage(null);
   }
 
