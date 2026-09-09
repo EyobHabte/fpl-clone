@@ -8,7 +8,7 @@ import { PlayerCardData } from '@/components/PlayerCard';
 
 type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 type PositionFilter = 'ALL' | Position;
-const [pendingReplacement, setPendingReplacement] = useState<SquadPlayerRow | null>(null);
+
 
 interface SquadPlayerRow {
   playerId: number;
@@ -38,6 +38,7 @@ export default function TransfersClient({
   } | null;
 }) {
   const [teamName] = useState(initialSquad?.user?.teamName ?? 'Your Team');
+  const [pendingReplacement, setPendingReplacement] = useState<SquadPlayerRow | null>(null);
   const [allPlayers] = useState<MarketPlayer[]>(initialPlayers);
   const [clubs] = useState<ClubOption[]>(initialClubs);
 
