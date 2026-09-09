@@ -8,6 +8,7 @@ import { PlayerCardData } from '@/components/PlayerCard';
 
 type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 type PositionFilter = 'ALL' | Position;
+const [pendingReplacement, setPendingReplacement] = useState<SquadPlayerRow | null>(null);
 
 interface SquadPlayerRow {
   playerId: number;
@@ -19,7 +20,6 @@ interface SquadPlayerRow {
     club: { shortName: string; code: number };
   };
 }
-
 const SQUAD_SIZE = 15;
 const POSITION_LIMITS: Record<Position, number> = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
 const MAX_PER_CLUB = 3;
@@ -104,13 +104,30 @@ export default function TransfersClient({
         },
       },
     ]);
+    if (pendingReplacement) setPendingReplacement(null);
   }
 
   function remove(playerId: number) {
     setMessage(null);
     setSquadPlayers((prev) => prev.filter((sp) => sp.playerId !== playerId));
   }
+ function startReplacement(row: SquadPlayerRow) {
+    // if a different replacement was already in progress, restore it first
+    if (pendingReplacement) {
+      setSquadPlayers((prev) => [...prev, pendingReplacement]);
+    }
+    setPendingReplacement(row);
+    setSquadPlayers((prev) => prev.filter((sp) => sp.playerId !== row.playerId));
+    setPositionFilter(row.player.position as PositionFilter);
+    setMobileView('list');
+    setMessage(null);
+  }
 
+  function cancelReplacement() {
+    if (!pendingReplacement) return;
+    setSquadPlayers((prev) => [...prev, pendingReplacement]);
+    setPendingReplacement(null);
+  }
   function resetFilters() {
     setPositionFilter('ALL');
     setSortKey('points');
@@ -224,6 +241,17 @@ export default function TransfersClient({
         </div>
       )}
 
+      {pendingReplacement && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-lg px-4 py-2 mb-4 flex items-center justify-between gap-3">
+          <span>
+            Replacing <strong>{pendingReplacement.player.webName}</strong> — pick their replacement below.
+          </span>
+          <button onClick={cancelReplacement} className="text-fpl-pink font-semibold text-xs whitespace-nowrap">
+            Cancel
+          </button>
+        </div>
+      )}
+
       {isDirty && (
         <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-2 mb-4">
           You have unsaved changes.
@@ -296,9 +324,10 @@ export default function TransfersClient({
           owned={ownedIds.has(detailPlayerId)}
           onClose={() => setDetailPlayerId(null)}
           onRemove={remove}
-          onSelectReplacement={(position) => {
-            setPositionFilter(position as PositionFilter);
-            setMobileView('list');
+          onSelectReplacement={() => {
+            const row = squadPlayers.find((sp) => sp.playerId === detailPlayerId);
+            if (row) startReplacement(row);
+            setDetailPlayerId(null);
           }}
         />
       )}
