@@ -4,29 +4,26 @@ export default function MessageBox({
   text,
   type,
   onDismiss,
-  className = '',
 }: {
   text: string;
   type: 'error' | 'success';
   onDismiss: () => void;
-  className?: string;
 }) {
   return (
-    <div
-      className={`flex items-start justify-between gap-3 text-sm rounded-lg px-4 py-3 border ${
-        type === 'success'
-          ? 'bg-green-50 border-green-300 text-green-700'
-          : 'bg-fpl-pink/10 border-fpl-pink text-fpl-pink'
-      } ${className}`}
-    >
-      <span>{text}</span>
-      <button
-        onClick={onDismiss}
-        aria-label="Dismiss message"
-        className="shrink-0 text-lg leading-none opacity-70 hover:opacity-100"
-      >
-        ✕
-      </button>
+    <div className="fixed inset-x-0 top-8 z-50 flex justify-center px-4 pointer-events-none">
+      <div className="relative bg-white rounded-2xl shadow-2xl px-6 py-6 max-w-sm w-full pointer-events-auto">
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss message"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-xl leading-none"
+        >
+          ✕
+        </button>
+        <h3 className={`text-2xl font-extrabold mb-2 pr-6 ${type === 'success' ? 'text-green-600' : 'text-fpl-pink'}`}>
+          {type === 'success' ? 'Success!' : 'Heads up'}
+        </h3>
+        <p className="text-sm text-slate-600 leading-relaxed pr-2">{text}</p>
+      </div>
     </div>
   );
 }

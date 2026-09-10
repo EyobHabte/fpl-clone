@@ -282,8 +282,8 @@ export default function PickTeamClient({
           <Pitch starting={starting} bench={bench} onPlayerClick={(p) => setActionPlayerId(p.id)} />
 
           {message && (
-        <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} className="mt-3" />
-      )}
+  <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} />
+)}
 
           {!validation.valid && validation.errors.length > 0 && (
             <ul className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 space-y-0.5">

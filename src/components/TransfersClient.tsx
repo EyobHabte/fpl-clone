@@ -233,8 +233,9 @@ export default function TransfersClient({
       </div>
 
       {message && (
-        <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} className="mb-4" />
-      )}
+  <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} />
+)}
+
 
       {pendingReplacement && (
         <div className="bg-amber-50 border border-amber-300 text-amber-800 text-sm rounded-lg px-4 py-2 mb-4 flex items-center justify-between gap-3">
