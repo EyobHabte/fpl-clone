@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import MessageBox from '@/components/MessageBox';
 
 export default function SettingsClient({
   email,
@@ -10,7 +11,7 @@ export default function SettingsClient({
   teamName: string;
 }) {
   const [teamName, setTeamName] = useState(initialTeamName);
-  const [teamNameMessage, setTeamNameMessage] = useState<string | null>(null);
+  const [teamNameMessage, setTeamNameMessage] = useState<{ text: string; type: "error" | "success" } | null>(null);
   const [savingTeamName, setSavingTeamName] = useState(false);
 
   async function saveTeamName(e: React.FormEvent) {
@@ -24,7 +25,9 @@ export default function SettingsClient({
     });
     const data = await res.json();
     setSavingTeamName(false);
-    setTeamNameMessage(res.ok ? 'Saved.' : data.error ?? 'Could not save');
+    setTeamNameMessage(
+      res.ok ? { text: "Saved.", type: "success" } : { text: data.error ?? "Could not save", type: "error" }
+    );
   }
 
   return (
@@ -43,7 +46,9 @@ export default function SettingsClient({
           onChange={(e) => setTeamName(e.target.value)}
           className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green"
         />
-        {teamNameMessage && <p className="text-xs text-slate-500">{teamNameMessage}</p>}
+        {teamNameMessage && (
+  <MessageBox text={teamNameMessage.text} type={teamNameMessage.type} onDismiss={() => setTeamNameMessage(null)} />
+)}
         <button
           type="submit"
           disabled={savingTeamName}

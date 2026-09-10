@@ -5,6 +5,7 @@ import SquadPitch from '@/components/SquadPitch';
 import PlayerListPanel, { MarketPlayer, ClubOption } from '@/components/PlayerListPanel';
 import PlayerDetailModal from '@/components/PlayerDetailModal';
 import { PlayerCardData } from '@/components/PlayerCard';
+import MessageBox from '@/components/MessageBox';
 
 type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 type PositionFilter = 'ALL' | Position;
@@ -232,15 +233,7 @@ export default function TransfersClient({
       </div>
 
       {message && (
-        <div
-          className={`text-sm rounded-lg px-4 py-2 mb-4 border ${
-            message.type === 'success'
-              ? 'bg-green-50 border-green-300 text-green-700'
-              : 'bg-fpl-pink/10 border-fpl-pink text-fpl-pink'
-          }`}
-        >
-          {message.text}
-        </div>
+        <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} className="mb-4" />
       )}
 
       {pendingReplacement && (

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import MessageBox from '@/components/MessageBox';
 
 export default function SignupPage() {
   const [teamName, setTeamName] = useState('');
@@ -95,9 +96,7 @@ export default function SignupPage() {
         </div>
 
         {error && (
-          <div className="bg-fpl-pink/10 border border-fpl-pink text-fpl-pink text-sm rounded-lg px-3 py-2">
-            {error}
-          </div>
+          <MessageBox text={error} type="error" onDismiss={() => setError(null)} />
         )}
 
         <button

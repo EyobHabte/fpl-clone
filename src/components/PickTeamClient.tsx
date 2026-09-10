@@ -7,6 +7,7 @@ import PickTeamActionModal, { ActionablePlayer } from '@/components/PickTeamActi
 import SubstitutePickerModal, { SubCandidate } from '@/components/SubstitutePickerModal';
 import { validateLineup, LineupPlayer, Position } from '@/lib/formation';
 import { computeAutoPick } from '@/lib/autoPick';
+import MessageBox from '@/components/MessageBox';
 
 interface SquadPlayerRow {
   playerId: number;
@@ -281,16 +282,8 @@ export default function PickTeamClient({
           <Pitch starting={starting} bench={bench} onPlayerClick={(p) => setActionPlayerId(p.id)} />
 
           {message && (
-            <div
-              className={`mt-3 text-sm rounded-lg px-4 py-2 border ${
-                message.type === 'success'
-                  ? 'bg-green-50 border-green-300 text-green-700'
-                  : 'bg-fpl-pink/10 border-fpl-pink text-fpl-pink'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
+        <MessageBox text={message.text} type={message.type} onDismiss={() => setMessage(null)} className="mt-3" />
+      )}
 
           {!validation.valid && validation.errors.length > 0 && (
             <ul className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 space-y-0.5">

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import PickTeamClient from '@/components/PickTeamClient';
 
+
 export const dynamic = 'force-dynamic';
 
 export default async function PickTeamPage() {

@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import MessageBox from '@/components/MessageBox';
 
 function LoginForm() {
   const router = useRouter();
@@ -89,9 +90,7 @@ function LoginForm() {
         </div>
 
         {error && (
-          <div className="bg-fpl-pink/10 border border-fpl-pink text-fpl-pink text-sm rounded-lg px-3 py-2">
-            {error}
-          </div>
+          <MessageBox text={error} type="error" onDismiss={() => setError(null)} />
         )}
 
         {needsVerification && (
