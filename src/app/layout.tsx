@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans bg-fpl-grey text-slate-900`}>
+      <body className={`${inter.variable} font-sans bg-fpl-grey text-slate-900 overflow-x-hidden`}>
         <AuthProvider>
           <Navbar />
           <main className="min-h-screen">{children}</main>
